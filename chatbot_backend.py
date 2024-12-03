@@ -420,7 +420,7 @@ def main():
         #with col2:
         #    st.title("Hello! I'm ANITA")
         # Display the image centered and larger at the top of the left panel
-        #st.image("AnitaMDorr.jpg", width=300, use_container_width=True)  # Increased width and using full column width
+        st.image("AnitaMDorr.jpg", width=300, use_container_width=True)  # Increased width and using full column width
         
         
         # Add title below the image
