@@ -192,7 +192,151 @@ def get_embedding2(text):
     embedding = response_body.get('embedding')
     return embedding
 
+def answer_query_nova(user_input, chat_handler):
+    """
+    This function takes the user question, creates an embedding of that question,
+    and performs a KNN search on your Amazon OpenSearch Index. Using the most similar results it feeds that into the Prompt
+    and LLM as context to generate an answer.
+    :param user_input: This is the natural language question that is passed in through the app.py file.
+    :return: The answer to your question from the LLM based on the context that was provided by the KNN search of OpenSearch.
+    """
+    # Setting primary variables, of the user input
+    userQuery = user_input
+    # formatting the user input
+    userQueryBody = json.dumps({"inputText": userQuery})
+    # creating an embedding of the user input to perform a KNN search with
+    userVectors = get_embedding(userQueryBody)
+    # the query parameters for the KNN search performed by Amazon OpenSearch with the generated User Vector passed in.
+    # TODO: If you wanted to add pre-filtering on the query you could by editing this query!
+    query = {
+        "size": 3,
+        "query": {
+            "knn": {
+                "vectors": {
+                    "vector": userVectors, "k": 3
+                }
+            }
+        },
+        "_source": True,
+        "fields": ["text"],
+    }
+    # performing the search on OpenSearch passing in the query parameters constructed above
+    response = client.search(
+        body=query,
+        index=st.secrets["vector_index_name"]#os.getenv("vector_index_name")
+    )
 
+    # Format Json responses into text
+    similaritysearchResponse = ""
+    # iterating through all the findings of Amazon openSearch and adding them to a single string to pass in as context
+    for i in response["hits"]["hits"]:
+        outputtext = i["fields"]["text"]
+        similaritysearchResponse = similaritysearchResponse + "Info = " + str(outputtext)
+
+        similaritysearchResponse = similaritysearchResponse
+
+    #chat history
+    chat_history = chat_handler.get_conversation_string()  
+
+    # Configuring the Prompt for the LLM
+    # TODO: EDIT THIS PROMPT TO OPTIMIZE FOR YOUR USE CASE
+    
+    prompt_data = f"""\n\nAssistant: You are an AI assistant that will help members of the Emergency Nurses Association (ENA) find information about ENA's position statements. Answer the provided question to the best of your ability using the information provided in the Context.
+
+Summarize the answer and provide sources to where the relevant information can be found, including links to ENA's website, position statement documents, and relevant policy briefs.
+
+Include this at the end of the response.
+Provide information based on the context provided.
+Format the output in a human-readable format - use paragraphs and bullet lists when applicable.
+Answer in detail with no preamble.
+If you are unable to answer accurately, please say so.
+Please mention the sources of where the answers came from by referring to specific ENA documents, policy briefs, and webpage URLs.
+
+Previous conversation: {chat_history}
+
+Question: {userQuery}
+
+Here is the text you should use as context: {similaritysearchResponse}
+
+\n\nAssistant:
+
+    """
+    #Configuring the model parameters, preparing for inference
+    #TODO: TUNE THESE PARAMETERS TO OPTIMIZE FOR YOUR USE CASE
+
+    system = [{
+    "text": "You are a helpful AI assistant."
+    }]
+
+    messages = [{
+    "role": "user",
+    "content": [{
+        "text": prompt_data
+    }]
+}]
+
+    # Configure inference parameters
+    inference_config = {
+        "maxTokens": 500,
+        "temperature": 0.7,
+        "topP": 0.9,
+        "topK": 20
+    }
+
+    # Construct the request body
+    request_body = {
+        "messages": messages,
+        "system": system,
+        "inferenceConfig": inference_config
+    }
+
+
+    try:
+        # Call the model
+        response = bedrock.invoke_model(
+            modelId='amazon.nova-pro-v1:0',
+            body=json.dumps(request_body),
+            contentType='application/json',
+            accept='application/json'
+        )
+        
+        # Parse the response
+        response_body = json.loads(response['body'].read())
+        
+        # Extract the generated text
+        output_text = response_body['output']['message']['content'][0]['text']
+        #print("Response:", output)
+
+    except Exception as e:
+        print(f"Error: {str(e)}")
+
+    # Run infernce on the LLM
+
+    model_id = "amazon.nova-pro-v1:0"  # change this to use a different version from the model provider
+    # response = bedrock.invoke_model(
+    #     modelId=model_id,
+    #     body=request_body,
+    #     accept=accept,
+    #     contentType=contentType
+    # )
+
+    # Get model information
+    #model_info = get_model_info(response, model_id)
+
+
+    # Extract information from the response
+    #response_body = json.loads(response.get('body').read())
+    # Extract the output text from the response
+    #output_text = response_body['results'][0]['outputText']
+    
+
+    # Save interaction to chat memory
+    chat_handler.add_message("human", user_input)
+    chat_handler.add_message("ai", output_text)
+
+    output_text = f"{output_text}\n\nModel used: {model_id}"
+  
+    return output_text
 
 def answer_query_titan(user_input, chat_handler):
     """
@@ -422,7 +566,7 @@ def main():
         # Display the image centered and larger at the top of the left panel
         st.image("AnitaMDorr.jpg", width=300, use_container_width=True)  # Increased width and using full column width
         
-        
+
         # Add title below the image
         st.title("Hello! I'm ANITA")
 
@@ -442,7 +586,7 @@ def main():
         # Add radio button group for "LLM Model"
         llm_model = st.radio(
             "LLM Model",
-            ("Llama", "Titan"),
+            ("Llama", "Titan","Nova"),
             index=1,  # Default to "Titan"
             help="Select the LLM model"
         )
@@ -464,6 +608,8 @@ def main():
         response_function = answer_query_titan
     elif llm_model == "Llama":
         response_function = answer_query_llama
+    elif llm_model == "Nova":
+        response_function = answer_query_nova
 
     # Create a container for the header with subtitle (this will be the main content area)
     header_container = st.container()
