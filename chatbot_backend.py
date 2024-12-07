@@ -192,7 +192,7 @@ def get_embedding2(text):
     embedding = response_body.get('embedding')
     return embedding
 
-def answer_query_nova(user_input, chat_handler):
+def answer_query_nova(user_input, chat_handler, answer_language):
     """
     This function takes the user question, creates an embedding of that question,
     and performs a KNN search on your Amazon OpenSearch Index. Using the most similar results it feeds that into the Prompt
@@ -241,10 +241,15 @@ def answer_query_nova(user_input, chat_handler):
     # Configuring the Prompt for the LLM
     # TODO: EDIT THIS PROMPT TO OPTIMIZE FOR YOUR USE CASE
     
-    prompt_data = f"""\n\nAssistant: You are an AI assistant that will help members of the Emergency Nurses Association (ENA) find information about ENA's position statements. Answer the provided question to the best of your ability using the information provided in the Context.
+    prompt_data = f"""\n\nAssistant: You are an AI assistant that will help members of the 
+    Emergency Nurses Association (ENA) find information about ENA's position statements. 
+    Answer the provided question to the best of your ability using the information provided 
+    in the Context.
 
-Summarize the answer and provide sources to where the relevant information can be found, including links to ENA's website, position statement documents, and relevant policy briefs.
+Summarize the answer and provide sources to where the relevant information can be found, 
+including links to ENA's website, position statement documents, and relevant policy briefs.
 
+Respond in {answer_language}.
 Include this at the end of the response.
 Provide information based on the context provided.
 Format the output in a human-readable format - use paragraphs and bullet lists when applicable.
@@ -338,7 +343,7 @@ Here is the text you should use as context: {similaritysearchResponse}
   
     return output_text
 
-def answer_query_titan(user_input, chat_handler):
+def answer_query_titan(user_input, chat_handler, answer_language):
     """
     This function takes the user question, creates an embedding of that question,
     and performs a KNN search on your Amazon OpenSearch Index. Using the most similar results it feeds that into the Prompt
@@ -387,10 +392,14 @@ def answer_query_titan(user_input, chat_handler):
     # Configuring the Prompt for the LLM
     # TODO: EDIT THIS PROMPT TO OPTIMIZE FOR YOUR USE CASE
     
-    prompt_data = f"""\n\nAssistant: You are an AI assistant that will help members of the Emergency Nurses Association (ENA) find information about ENA's position statements. Answer the provided question to the best of your ability using the information provided in the Context.
+    prompt_data = f"""\n\nAssistant: You are an AI assistant that will help members of the 
+    Emergency Nurses Association (ENA) find information about ENA's position statements. 
+    Answer the provided question to the best of your ability using the information provided 
+    in the Context.
 
 Summarize the answer and provide sources to where the relevant information can be found, including links to ENA's website, position statement documents, and relevant policy briefs.
 
+Respond in {answer_language}.
 Include this at the end of the response.
 Provide information based on the context provided.
 Format the output in a human-readable format - use paragraphs and bullet lists when applicable.
@@ -444,7 +453,7 @@ Here is the text you should use as context: {similaritysearchResponse}
   
     return output_text
 
-def answer_query_llama(user_input, chat_handler):
+def answer_query_llama(user_input, chat_handler, answer_language):
     """
     This function takes the user question, creates an embedding of that question,
     and performs a KNN search on your Amazon OpenSearch Index. Using the most similar results it feeds that into the Prompt
@@ -493,10 +502,14 @@ def answer_query_llama(user_input, chat_handler):
     # Configuring the Prompt for the LLM
     # TODO: EDIT THIS PROMPT TO OPTIMIZE FOR YOUR USE CASE
     
-    prompt_data = f"""\n\nAssistant: You are an AI assistant that will help members of the Emergency Nurses Association (ENA) find information about ENA's position statements. Answer the provided question to the best of your ability using the information provided in the Context.
+    prompt_data = f"""\n\nAssistant: You are an AI assistant that will help members of the 
+    Emergency Nurses Association (ENA) find information about ENA's position statements. 
+    Answer the provided question to the best of your ability using the information provided in 
+    the Context.
 
 Summarize the answer and provide sources to where the relevant information can be found, including links to ENA's website, position statement documents, and relevant policy briefs.
 
+Respond in {answer_language}.
 Include this at the end of the response.
 Provide information based on the context provided.
 Format the output in a human-readable format - use paragraphs and bullet lists when applicable.
@@ -573,6 +586,13 @@ def main():
         # Add some space after the title
         st.markdown("<br>", unsafe_allow_html=True)
 
+        # Add Language Input Box at the bottom of the sidebar
+        language = st.selectbox(
+            "Language",
+            ("English", "Spanish", "Polish"),
+            index=0,
+            help="Select your preferred language"
+        )
 
         # Add radio button group for "ENA Focus"
         enafocus = st.radio(
@@ -587,7 +607,7 @@ def main():
         llm_model = st.radio(
             "LLM Model",
             ("Llama", "Titan","Nova"),
-            index=1,  # Default to "Titan"
+            index=2,  # Default "
             help="Select the LLM model"
         )
 
@@ -655,7 +675,7 @@ def main():
         # Get and display AI response based on the selected model
         with st.chat_message("ai"):
             with st.spinner("Thinking..."):
-                response = response_function(prompt, st.session_state.chat_handler)
+                response = response_function(prompt, st.session_state.chat_handler, language)
                 st.write(response)
 
 # Call the main function to run the app
