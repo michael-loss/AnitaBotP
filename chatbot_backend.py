@@ -584,7 +584,7 @@ def main():
         st.title("Hello! I'm ANITA")
 
         # Add some space after the title
-        st.markdown("<br>", unsafe_allow_html=True)
+        #st.markdown("<br>", unsafe_allow_html=True)
 
         # Add Language Input Box at the bottom of the sidebar
         language = st.selectbox(
@@ -606,8 +606,8 @@ def main():
         # Add radio button group for "LLM Model"
         llm_model = st.radio(
             "LLM Model",
-            ("Llama", "Titan","Nova"),
-            index=2,  # Default "
+            ("Nova","Llama"),
+            index=0,  # Default "
             help="Select the LLM model"
         )
 
