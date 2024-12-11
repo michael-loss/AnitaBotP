@@ -192,7 +192,7 @@ def get_embedding2(text):
     embedding = response_body.get('embedding')
     return embedding
 
-def answer_query_nova(user_input, chat_handler, answer_language):
+def answer_query_nova(user_input, chat_handler):
     """
     This function takes the user question, creates an embedding of that question,
     and performs a KNN search on your Amazon OpenSearch Index. Using the most similar results it feeds that into the Prompt
@@ -244,13 +244,13 @@ def answer_query_nova(user_input, chat_handler, answer_language):
     prompt_data = f"""\n\nAssistant: You are an AI assistant that will help members of the 
     Emergency Nurses Association (ENA) find information about ENA's position statements. 
     Answer the provided question to the best of your ability using the information provided 
-    in the Context.
+    in the Context. When possible respond in the same language as the prompt.
 
 Summarize the answer and provide sources to where the relevant information can be found, 
-including links to ENA's website, position statement documents, and relevant policy briefs.
+including links to ENA's website, position statement documents, and relevant policy briefs. 
 
-Respond in {answer_language}.
 Include this at the end of the response.
+The language used for the question.
 Provide information based on the context provided.
 Format the output in a human-readable format - use paragraphs and bullet lists when applicable.
 Answer in detail with no preamble.
@@ -343,7 +343,7 @@ Here is the text you should use as context: {similaritysearchResponse}
   
     return output_text
 
-def answer_query_titan(user_input, chat_handler, answer_language):
+def answer_query_titan(user_input, chat_handler):
     """
     This function takes the user question, creates an embedding of that question,
     and performs a KNN search on your Amazon OpenSearch Index. Using the most similar results it feeds that into the Prompt
@@ -399,7 +399,6 @@ def answer_query_titan(user_input, chat_handler, answer_language):
 
 Summarize the answer and provide sources to where the relevant information can be found, including links to ENA's website, position statement documents, and relevant policy briefs.
 
-Respond in {answer_language}.
 Include this at the end of the response.
 Provide information based on the context provided.
 Format the output in a human-readable format - use paragraphs and bullet lists when applicable.
@@ -453,7 +452,7 @@ Here is the text you should use as context: {similaritysearchResponse}
   
     return output_text
 
-def answer_query_llama(user_input, chat_handler, answer_language):
+def answer_query_llama(user_input, chat_handler):
     """
     This function takes the user question, creates an embedding of that question,
     and performs a KNN search on your Amazon OpenSearch Index. Using the most similar results it feeds that into the Prompt
@@ -509,7 +508,7 @@ def answer_query_llama(user_input, chat_handler, answer_language):
 
 Summarize the answer and provide sources to where the relevant information can be found, including links to ENA's website, position statement documents, and relevant policy briefs.
 
-Respond in {answer_language}.
+Respond in the language of the question.
 Include this at the end of the response.
 Provide information based on the context provided.
 Format the output in a human-readable format - use paragraphs and bullet lists when applicable.
@@ -587,12 +586,12 @@ def main():
         #st.markdown("<br>", unsafe_allow_html=True)
 
         # Add Language Input Box at the bottom of the sidebar
-        language = st.selectbox(
-            "Language",
-            ("English", "Spanish", "Polish"),
-            index=0,
-            help="Select your preferred language"
-        )
+        # language = st.selectbox(
+        #     "Language",
+        #     ("English", "Spanish", "Polish"),
+        #     index=0,
+        #     help="Select your preferred language"
+        # )
 
         # Add radio button group for "ENA Focus"
         enafocus = st.radio(
@@ -675,7 +674,7 @@ def main():
         # Get and display AI response based on the selected model
         with st.chat_message("ai"):
             with st.spinner("Thinking..."):
-                response = response_function(prompt, st.session_state.chat_handler, language)
+                response = response_function(prompt, st.session_state.chat_handler)
                 st.write(response)
 
 # Call the main function to run the app
